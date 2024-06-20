@@ -132,16 +132,17 @@ Query : {}
 
         st.markdown(
             f'''
-            <img src="{img}" width=300>
+            ![Image]({img})
             '''
         )
 
     mark_image = '\n'.join([
         f'''
-        <img src="{img}" width="300" height = "200"/>
+        ![Image]({img})
         '''
         for img in images
     ])
+
 
     st.sidebar.markdown(response)
     st.sidebar.markdown(
