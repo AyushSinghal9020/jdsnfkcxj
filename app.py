@@ -63,8 +63,6 @@ if st.button('Ask') :
     bsdocs = base_vc.similarity_search(query)
     rsdocs = ret_vc.similarity_search(query)
 
-    st.write(rsdocs)
-
     context = ' '.join([val.page_content for val in bsdocs]) + ' '.join([val.page_content for val in rsdocs])
 
     images = [val.metadata['url'] for val in bsdocs if val.metadata['type'] == 'image'] + [val.metadata['url'] for val in rsdocs if val.metadata['type'] == 'image']
@@ -93,3 +91,19 @@ Query : {}
             ![Image]({img})
             '''
         )
+
+    mark_image = '\n'.join([
+        f'''
+        ![Image]({img})
+        '''
+        for img in images
+    ])
+
+    st.sidebar.markdown(response)
+    st.sidebar.markdown(
+        f'''
+        ```
+        {mark_image}
+        ```
+        '''
+    )
