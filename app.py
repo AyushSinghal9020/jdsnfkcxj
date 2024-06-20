@@ -4,6 +4,7 @@ from langchain.schema.document import Document
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_cohere import ChatCohere
 from langchain_core.messages import HumanMessage
+import PyPDF2
 
 import streamlit as st 
 
@@ -33,12 +34,13 @@ base_vc = FAISS.from_documents(
 base_vc.save_local('vc')
 
 json_file = st.file_uploader('Upload the json file' , type = ['json'])
+pdf_file = st.file_uploader('Upload the pdf file' , type = ['pdf'])
 query = st.text_input('Query')
 
 if st.button('Ask') : 
 
-    ret_vc = FAISS.load_local('vc' , embeddings = embedding , allow_dangerous_deserialization = True)
-
+    ret_j_vc = FAISS.load_local('vc' , embeddings = embedding , allow_dangerous_deserialization = True)
+    ret_p_vc = FAISS.load_local('vc' , embeddings = embedding , allow_dangerous_deserialization = True)
     if json_file : 
 
         documents = []
@@ -53,19 +55,59 @@ if st.button('Ask') :
                 }
             ))
 
-        ret_vc = FAISS.from_documents(
+        ret_j_vc = FAISS.from_documents(
             documents , 
             embedding = HuggingFaceEmbeddings(
                 model_name = 'all-MiniLM-L6-v2'
             )
         )
 
+    if pdf_file : 
+
+        pdf = PyPDF2.PdfReader(pdf_file)
+
+        text = ' '.join([
+            pdf.pages[page_number].extract_text()
+            for page_number 
+            in range(len(pdf.pages))
+        ])
+
+        chunks = [
+            text[index : index + 1024]
+            for index 
+            in range(0 , len(text) , 1024)
+        ]
+
+        for chunk in chunks : 
+
+            documents.append(
+                Document(
+                    page_content = chunk , 
+                    metadata = {
+                        'type' : 'text' , 
+                        'url' : ''    
+                    }
+                ))
+
+        ret_p_vc = FAISS.from_documents(
+            documents , 
+            embedding = HuggingFaceEmbeddings(
+                model_name = 'all-MiniLM-L6-v2'
+            )
+        )
+
+
     bsdocs = base_vc.similarity_search(query)
-    rsdocs = ret_vc.similarity_search(query)
+    rsdocs = ret_j_vc.similarity_search(query)
+    psdocs = ret_p_vc.similarity_search(query)
 
-    context = ' '.join([val.page_content for val in bsdocs]) + ' '.join([val.page_content for val in rsdocs])
+    st.sidebar.write(bsdocs)
+    st.sidebar.write(rsdocs)
+    st.sidebar.write(psdocs)
 
-    images = [val.metadata['url'] for val in bsdocs if val.metadata['type'] == 'image'] + [val.metadata['url'] for val in rsdocs if val.metadata['type'] == 'image']
+    context = ' '.join([val.page_content for val in bsdocs]) + ' '.join([val.page_content for val in rsdocs]) + ' '.join([val.page_content for val in psdocs])
+
+    images = [val.metadata['url'] for val in bsdocs if val.metadata['type'] == 'image'] + [val.metadata['url'] for val in rsdocs if val.metadata['type'] == 'image'] + [val.metadata['url'] for val in psdocs if val.metadata['type'] == 'image']
 
     prompt = '''
 You are a conversational chatbot, your task is to answer questions based on the context provided.
@@ -76,6 +118,7 @@ Context : {}
 
 Query : {}
     '''
+
     chat = ChatCohere(cohere_api_key = 'vJZr4T4bWAJMn0kOdkSN1pmjxzrqLlPOy1YaA3fa')
     prompt = prompt.format(context , query)
 
@@ -89,13 +132,13 @@ Query : {}
 
         st.markdown(
             f'''
-            ![Image]({img})
+            <img src="{img}" width=300>
             '''
         )
 
     mark_image = '\n'.join([
         f'''
-        ![Image]({img})
+        <img src="{img}" width="300" height = "200"/>
         '''
         for img in images
     ])
