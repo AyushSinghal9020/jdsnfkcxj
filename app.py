@@ -70,11 +70,12 @@ if st.button('Ask') :
     prompt = '''
 You are a conversational chatbot, your task is to answer questions based on the context provided.
 
+If the provided context does not match with query - just output 'No Specific context was provided for this query' and do not answer the query further
+
 Context : {}
 
 Query : {}
     '''
-
     chat = ChatCohere(cohere_api_key = 'vJZr4T4bWAJMn0kOdkSN1pmjxzrqLlPOy1YaA3fa')
     prompt = prompt.format(context , query)
 
