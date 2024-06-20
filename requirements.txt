@@ -1,0 +1,10 @@
+langchain 
+langchain_community 
+langchain_cohere
+langchain_openai
+langchain_core
+faiss-cpu
+sentence-transformers
+cohere
+openai
+streamlit
