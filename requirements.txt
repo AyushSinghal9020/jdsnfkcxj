@@ -8,3 +8,4 @@ sentence-transformers
 cohere
 openai
 streamlit
+PyPDF2
